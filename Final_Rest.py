@@ -164,27 +164,35 @@ flders = ['Error','JSData','Vectors']
 
 
 #--------------------------------------------------------------------------------------##
-os.chdir(data_location)
-for flder in flders:
-    os.mkdir(flder)
-arcpy.CreateFileGDB_management(out_folder_path=os.path.join(data_location,'Vectors'), out_name=GDBNAME, out_version="CURRENT")    
 current_file =  data_location
 link_dir = data_location#os.path.dirname(current_file)
-
-#Get Ids
-url_id_count = rest_url+'/query?where=1%3D1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=false&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=true&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&resultOffset=&resultRecordCount=&f=pjson'
-url_id_list = rest_url+'/query?where=1=1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=false&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=true&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&resultOffset=&resultRecordCount=&f=pjson'
-resp_id_count = requests.get(url_id_count).json()
-resp_id_list = requests.get(url_id_list).json()
-#id_count = resp_id_count['count']
-id_lst = resp_id_list['objectIds']
-
-with open(os.path.join(data_location,'Id.txt'), 'wb') as idfile:
-    idfile.writelines("%s\n" % l for l in id_lst)
-
-##generate URLS
-urls = [line.strip() for line in open(os.path.join(link_dir,'Id.txt'), 'r')]
-
+urls = []
+#Check if the id.txt exists if not then create
+if not os.path.exists(os.path.join(data_location,'Id.txt')):
+    os.chdir(data_location)
+    for flder in flders:
+        os.mkdir(flder)
+    arcpy.CreateFileGDB_management(out_folder_path=os.path.join(data_location,'Vectors'), out_name=GDBNAME, out_version="CURRENT")
+    
+    #Get Ids
+    url_id_count = rest_url+'/query?where=1%3D1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=false&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=true&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&resultOffset=&resultRecordCount=&f=pjson'
+    url_id_list = rest_url+'/query?where=1=1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=false&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=true&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&resultOffset=&resultRecordCount=&f=pjson'
+    resp_id_count = requests.get(url_id_count).json()
+    resp_id_list = requests.get(url_id_list).json()
+    id_count = resp_id_count['count']
+    id_lst = resp_id_list['objectIds']
+    
+    with open(os.path.join(data_location,'Id.txt'), 'wb') as idfile:
+        idfile.writelines("%s\n" % l for l in id_lst)
+    ##generate URLS
+    urls = [line.strip() for line in open(os.path.join(link_dir,'Id.txt'), 'r')]  
+else:
+    ##generate URLS
+    urls = [line.strip() for line in open(os.path.join(link_dir,'Id.txt'), 'r')]
+    os.chdir(data_location)
+    for flder in flders:
+        os.mkdir(flder)
+    arcpy.CreateFileGDB_management(out_folder_path=os.path.join(data_location,'Vectors'), out_name=GDBNAME, out_version="CURRENT")
 
 ##Modify list if download obstructed
 if start_index:
