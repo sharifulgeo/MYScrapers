@@ -141,13 +141,13 @@ headers = {"User-Agent":random.choice(AGENTS)}
 
 
 
-data_location = os.path.split(sys.argv[0])[0] #r"C:\Users\Winrock\Desktop\Contst\GIS"
+data_location = os.path.split(sys.argv[0])[0]
 
 GDBNAME="Taxpayers"
 
 start_index=50116386
 download_feature_count = 100
-rest_url= 'http://gis.crowwing.us/cwcexternal/rest/services/CROWWINGPUBLIC/MapServer/0'
+rest_url= 'http://XYZ/MapServer/0'
 feature_name='T_'
 
 
