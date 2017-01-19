@@ -247,7 +247,7 @@ cnt = 1
 json_paths = json_file_path_lister(os.path.join(data_location, 'JSData'))
 for single_json in json_paths:
     if cnt%50==0:
-        print "Completed %s"%str(50*merge_feature_count)
+        print "Completed conversion of %s"%str(50*merge_feature_count)
     feat_name = feature_name+os.path.basename(single_json).split('.')[0]
     json_to_feature_converter(single_json, os.path.join(data_location,'Vectors',GDBNAME+'.gdb'), 
                              feat_name)
