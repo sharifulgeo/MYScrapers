@@ -141,13 +141,13 @@ headers = {"User-Agent":random.choice(AGENTS)}
 
 
 
-data_location = os.path.split(sys.argv[0])[0]
+data_location = os.path.split(sys.argv[0])[0] 
 
 GDBNAME="Taxpayers"
 
-start_index=50116386
+start_index=50197286
 download_feature_count = 100
-rest_url= 'http://XYZ/MapServer/0'
+rest_url= 'XYZ/MapServer/0'
 feature_name='T_'
 
 
@@ -243,11 +243,15 @@ for url in result:
                    os.path.join(data_location, 'Error'), error_file_name)
 
 #Convert jsons into feature class
+cnt = 1
 json_paths = json_file_path_lister(os.path.join(data_location, 'JSData'))
 for single_json in json_paths:
+    if cnt%50==0:
+        print "Completed %s"%str(50*merge_feature_count)
     feat_name = feature_name+os.path.basename(single_json).split('.')[0]
     json_to_feature_converter(single_json, os.path.join(data_location,'Vectors',GDBNAME+'.gdb'), 
                              feat_name)
+    cnt+=1
 
 #Merge featureclass into single one
 #------------------------------------------------------------
@@ -255,6 +259,7 @@ for single_json in json_paths:
 arcpy.CreateFileGDB_management(out_folder_path=data_location, out_name='TempMerge', out_version="CURRENT")
 
 flag = 1
+wildcard_prfix=''
 fcs = feature_class_path_lister(os.path.join(data_location, 'Vectors', GDBNAME+'.gdb'), wcard_search)
 #Run recursive merge untill all get into a single feature class
 while len(fcs)>1:
