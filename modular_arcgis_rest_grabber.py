@@ -273,7 +273,7 @@ while len(fcs)>1:
     fcs = feature_class_path_lister(os.path.join(data_location,'TempMerge.gdb'), wildcard_prfix+'*')
     flag+=1
     if merge_counter%50==0:
-        print "Completed conversion of %s"%str(merge_counter)
+        print "Completed merger of %s"%str(merge_counter)
     merge_counter+=1
     
 final_merged_feature = feature_class_path_lister(os.path.join(data_location,'TempMerge.gdb'), wildcard_prfix+'*')[0]
