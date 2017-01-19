@@ -236,7 +236,6 @@ urls = [line.strip() for line in open(os.path.join(data_location, id_file_name),
 if start_index:
     start = urls.index(str(start_index))#+901
     urls= urls[start:]
-    urls = urls[0:200]
 #Download jsons
 result = [urls[i:i+download_feature_count] for i in xrange(0, len(urls), download_feature_count)]
 for url in result:
