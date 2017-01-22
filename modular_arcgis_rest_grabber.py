@@ -143,19 +143,28 @@ headers = {"User-Agent":random.choice(AGENTS)}
 
 data_location = os.path.split(sys.argv[0])[0]
 
-GDBNAME="Taxpayers"
+GDBNAME="Lakes"
 
-start_index=50197286
+start_index=None
+sample_feature_download_count = None
 download_feature_count = 100
-rest_url= 'XYZ/MapServer/0'
-feature_name='T_'
+rest_url= 'XYZ/MapServer/30'
+feature_name='L_'
 
+object_id_url={
+"object_id_url_no_filter" : rest_url+"/query?where=1=1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=false&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=true&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&resultOffset=&resultRecordCount=&f=pjson",
+"object_id_url_filter" : rest_url+"/query?where=OBJECTID <> 0 AND SYSTEM = 'L'&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=true&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=true&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&returnTrueCurves=false&resultOffset=&resultRecordCount=&f=pjson"
+             }
+
+object_id_url = object_id_url[object_id_url.keys()[1]]
 
 #Merge
 merge_feature_count=50
-merged_feature_name='FinalTXP'
+merged_feature_name='Lakes'
 id_file_name = 'id.txt'
 error_file_name = 'error.txt'
+
+
 
 
 wcard_search=feature_name+'*'
@@ -175,11 +184,8 @@ def gdb_creator(gdb_location, gdb_name):
     arcpy.CreateFileGDB_management(out_folder_path=gdb_location, out_name=gdb_name, out_version="CURRENT")
     
 def objectId_downloader(base_url_count, objectId_save_location, id_file_name):
-    url_id_count = base_url_count+'/query?where=1%3D1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=false&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=true&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&resultOffset=&resultRecordCount=&f=pjson'
-    url_id_list = base_url_count+'/query?where=1=1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=false&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=true&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&resultOffset=&resultRecordCount=&f=pjson'
-    resp_id_count = requests.get(url_id_count).json()
+    url_id_list = base_url_count+ object_id_url
     resp_id_list = requests.get(url_id_list).json()
-    id_count = resp_id_count['count']
     id_lst = resp_id_list['objectIds']
     with open(os.path.join(objectId_save_location, id_file_name), 'wb') as idfile:
         idfile.writelines("%s\n" % l for l in id_lst)
@@ -236,6 +242,10 @@ urls = [line.strip() for line in open(os.path.join(data_location, id_file_name),
 if start_index:
     start = urls.index(str(start_index))#+901
     urls= urls[start:]
+    
+if sample_feature_download_count:
+        urls= urls[0:sample_feature_download_count]
+        
 #Download jsons
 result = [urls[i:i+download_feature_count] for i in xrange(0, len(urls), download_feature_count)]
 for url in result:
