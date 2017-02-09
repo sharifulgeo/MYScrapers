@@ -10,7 +10,6 @@ arcpy.env.overwriteOutput = True
 
 '''
 http://straffa.com/
-
 24.157.37.61:8080(USA) Tested
 211.23.19.130:80
 209.66.220.124:8080(USA)
@@ -18,8 +17,6 @@ http://straffa.com/
 103.16.157.183:8080 Papua NG
 115.29.145.48:10086
 93.158.212.111:8089 NL Tested
-
-
 85.185.42.2:8080 IR Tested
 '''
 
@@ -143,24 +140,26 @@ headers = {"User-Agent":random.choice(AGENTS)}
 
 data_location = os.path.split(sys.argv[0])[0]
 
-GDBNAME="Lakes"
+GDBNAME="Roads"
 
 start_index=None
-sample_feature_download_count = None
+sample_feature_download_count = 1000  #This is just to download sample number of features
 download_feature_count = 100
-rest_url= 'XYZ/MapServer/30'
-feature_name='L_'
+rest_url= 'http://gis.co.crow-wing.mn.us/cwcexternal/rest/services/CWC_Basemap_dynamic/MapServer/2'
+feature_name='R_'
 
 object_id_url={
 "object_id_url_no_filter" : rest_url+"/query?where=1=1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=false&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=true&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&resultOffset=&resultRecordCount=&f=pjson",
-"object_id_url_filter" : rest_url+"/query?where=OBJECTID <> 0 AND SYSTEM = 'L'&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=true&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=true&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&returnTrueCurves=false&resultOffset=&resultRecordCount=&f=pjson"
+"object_id_url_filter" : rest_url+"/query?where=&text=&objectIds=XXXXXXXXXXXX&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=*&returnGeometry=true&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&returnTrueCurves=false&resultOffset=&resultRecordCount=&f=pjson",
+
+"example_of_query" : rest_url+"/query?where=OBJECTID <> 0 AND SYSTEM = 'L'&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=true&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=true&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&returnDistinctValues=false&returnTrueCurves=false&resultOffset=&resultRecordCount=&f=pjson"
              }
 
-object_id_url = object_id_url[object_id_url.keys()[1]]
+#json_download_url = object_id_url[object_id_url.keys()[1]]
 
 #Merge
-merge_feature_count=50
-merged_feature_name='Lakes'
+merge_feature_count=100
+merged_feature_name='Roads'
 id_file_name = 'id.txt'
 error_file_name = 'error.txt'
 
@@ -184,16 +183,16 @@ def gdb_creator(gdb_location, gdb_name):
     arcpy.CreateFileGDB_management(out_folder_path=gdb_location, out_name=gdb_name, out_version="CURRENT")
     
 def objectId_downloader(base_url_count, objectId_save_location, id_file_name):
-    url_id_list = base_url_count+ object_id_url
+    url_id_list = base_url_count
     resp_id_list = requests.get(url_id_list).json()
     id_lst = resp_id_list['objectIds']
     with open(os.path.join(objectId_save_location, id_file_name), 'wb') as idfile:
         idfile.writelines("%s\n" % l for l in id_lst)
         
-def json_downloader(base_rest_url, id_range_to_be_downloaded,json_foler_to_save, id_file_name, error_folder_location, error_file_name):
+def json_downloader(json_download_url, id_range_to_be_downloaded,json_foler_to_save, id_file_name, error_folder_location, error_file_name):
     time.sleep(random.choice([1,2,3,4]))
     cor_url = ','.join(id_range_to_be_downloaded)
-    bas_req = str(rest_url)+"/query?where=5=5&text=&objectIds="+cor_url+"&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=*&returnGeometry=true&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&f=pjson"
+    bas_req = json_download_url.replace('XXXXXXXXXXXX',cor_url)             #"/query?where=5=5&text=&objectIds="+cor_url+"&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=*&returnGeometry=true&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&f=pjson"
     cafile = certifi.where()
     #r = requests.get(url, verify=cafile)    
     page = requests.get(bas_req,headers = headers,verify=False)#,proxies=proxies, headers = headers
@@ -235,7 +234,7 @@ for folder_name_iterator in flders:
     folder_creator(data_location, folder_name_iterator)
 gdb_creator(os.path.join(data_location,'Vectors'), GDBNAME)
 
-objectId_downloader(rest_url, data_location, id_file_name)
+objectId_downloader(object_id_url['object_id_url_no_filter'], data_location, id_file_name)
 urls = [line.strip() for line in open(os.path.join(data_location, id_file_name), 'r')]
 
 ##Modify list if download obstructed
@@ -249,7 +248,7 @@ if sample_feature_download_count:
 #Download jsons
 result = [urls[i:i+download_feature_count] for i in xrange(0, len(urls), download_feature_count)]
 for url in result:
-    json_downloader(rest_url, url, os.path.join(data_location, 'JSData'),id_file_name, 
+    json_downloader(object_id_url['object_id_url_filter'], url, os.path.join(data_location, 'JSData'),id_file_name, 
                    os.path.join(data_location, 'Error'), error_file_name)
 
 #Convert jsons into feature class
@@ -272,8 +271,11 @@ flag = 1
 merge_counter = 1
 wildcard_prfix=''
 fcs = feature_class_path_lister(os.path.join(data_location, 'Vectors', GDBNAME+'.gdb'), wcard_search)
+
 #Run recursive merge untill all get into a single feature class
+IsWhileRunFlag = 0
 while len(fcs)>1:
+    IsWhileRunFlag+=1
     wildcard_prfix = 'tmp'+str(flag)
     fc = [fcs[i:i+merge_feature_count] for i in xrange(0, len(fcs), merge_feature_count)]
     for merge_iterator in fc:
@@ -286,7 +288,13 @@ while len(fcs)>1:
         print "Completed merger of %s"%str(merge_counter)
     merge_counter+=1
     
-final_merged_feature = feature_class_path_lister(os.path.join(data_location,'TempMerge.gdb'), wildcard_prfix+'*')[0]
+if IsWhileRunFlag>0:    
+    final_merged_feature = feature_class_path_lister(os.path.join(data_location,'TempMerge.gdb'), wildcard_prfix+'*')[0]
+elif IsWhileRunFlag==0:
+    final_merged_feature = fcs[0]
+else:
+    raise Exception("Error in merging!")
+
 arcpy.CopyFeatures_management(final_merged_feature, os.path.join(data_location, 'Vectors', GDBNAME+'.gdb\\',merged_feature_name))
 arcpy.env.workspace = os.path.join(data_location, 'Vectors', GDBNAME+'.gdb')
 shutil.rmtree(os.path.join(data_location,'TempMerge.gdb'))
