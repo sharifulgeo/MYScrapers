@@ -1,0 +1,305 @@
+import requests
+from dateutil import parser
+from requests.adapters import HTTPAdapter
+from bs4 import BeautifulSoup
+from bs4 import element
+from random import randint
+from datetime import timedelta, date
+from requests.packages.urllib3.util.retry import Retry
+import collections,pickle
+
+import os,time,csv
+from datetime import datetime
+from multiprocessing import Pool, cpu_count
+import concurrent.futures
+from datetime import timedelta, date
+
+import aiohttp
+import asyncio
+
+from colorama import Fore, Back, Style
+import colorama
+colorama.init()
+
+
+
+def challan_scrapper(xBranchCode,xTransactionType,xStartDate,xEndDate):
+   
+    print (xBranchCode)
+    print (xTransactionType)
+    print (xStartDate)
+    print (xEndDate)
+    
+    master_data = []
+    dtS = time.strptime(xStartDate, '%Y-%m-%d')
+    dtE = time.strptime(xEndDate, '%Y-%m-%d')
+    
+    #-------------------------------------SET PARAMETERS------------------------
+    transaction_type = xTransactionType     #'L' for check and 'C' for cash
+    dt_ranges = [date(dtS.tm_year, dtS.tm_mon, dtS.tm_mday),date(dtE.tm_year, dtE.tm_mon, dtE.tm_mday)]         #[startdate(Y/M/D),enddate(Y/M/D)]
+    request_latch = 0
+    bank_brnch = {}
+    bank_brnch.update([('200930452','COMILLA CANTONMENT, COMILLA'),('86','Barura'),('200190181','TITAS  BRANCH'),('47277129','BISE BIDG.'),('87','Brahmanpara'),('88','Burichong'),('89','Chandina'),('90','Chowddagram'),('91','Comilla'),('200191335','COMILLA SADAR DAKSHIN UPAZILLA BRANCH'),('200930449','COURT BUILDING'),('92','Daudkandi'),('93','Daulatgonj'),('94','Debidwar'),('95','Homna'),('200930450','KOTBARI'),('200190565','LALMAI UPAZILA Branch'),('98','Monikarchar Br.'),('44875936','Monohor Ganj'),('96','Muradnagar'),('97','Nangalkot'),('200190181','TITAS  BRANCH'),('99','Akhaura'),('100','Ashuganj'),('101','Bancharampur'),\
+                       ('102','Bbaria Sadar'),('103','Kasba'),('104','Nabinagar'),('1274727','Agrabad CORP. Chittagong'),\
+                       ('105','Nasirnagar'),('106','Sarail'),('200120098','Bijoynagar'),('200191335','COMILLA SADAR DAKSHIN UPAZILLA BRANCH'),\
+                       ('1218488', 'Banani_SB'),('11463','BB_Motijheel'),('2573838' , 'Agargaon (SB)'),('42238412' , 'AGLA, DHAKA'),('41829141' , 'Agrani Balika Bidyalaya (SB)'),('42238417' , 'AMIN BAZAR, DHAKA'),('42238434' , 'ARMANITOLA, DHAKA'),('44205532' , 'ASHULIA BAZAR'),('42238436' , 'ATI BAZAR, DHAKA'),('42238443' , 'AWLAD HOSSAIN MARKET, DHAKA'),('1217867' , 'B.B. Avenue Corp,Dhaka (SB)'),('42238447' , 'B.I.S.E., DHAKA'),('42238448' , 'B.M.E. BOARD, DHAKA'),('42238451' , 'B.U.E.T., DHAKA'),('42238452' , 'BABUBAZAR, DHAKA'),('1218486' , 'Badda, Dhaka (SB)'),('1218487' , 'Baitul Mokarrom,Dhaka (SB)'),('42238453' , 'BAJME KADERIA COMPLEX, DHAKA'),('42238455' , 'BANANI BAZAR, DHAKA'),('1218488' , 'Banani, Dhaka (SB)'),('42238461' , 'BANGA BANDHU JATIO STADIUM, DHAKA'),('42238466' , 'BANGA BHABAN, DHAKA'),('2549487' , 'Baridhara (SB)'),('42238480' , 'BASABO, DHAKA'),('42238486' , 'BAWANINAGAR, DHAKA'),('1218708' , 'Begum Rokeya Sarani,Dhaka (SB)'),('1218720' , 'Chawk Bazar,Dhaka'),('42238489' , 'CHURAIN, DHAKA'),('41458064' , 'COLLEGE GATE (SB)'),('1218496' , 'Custom House, Dhaka'),('1218721' , 'D.C.Hall, Dhaka'),('1218715' , 'D.E.P.Z,Dhaka'),('1218489' , 'Dhaka Cantt., Dhaka (SB)'),('1218497' , 'Dhaka Registration Com.,Dhaka'),('41614746' , 'DHAKA UNIVERSITY CAMPUS (SB)'),('115' , 'Dhamrai (SB)'),('3649899' , 'Dhanmondi Corp. (SB)'),('1218502' , 'Dilkusha Corp.Br., Dhaka (SB)'),('42238494' , 'DISTILARY ROAD, DHAKA'),('1218500' , 'Doyagonj, Dhaka'),('1218503' , 'Fakirapool,Dhaka (SB)'),('1857462' , 'Farash gonj, Dhaka (SB)'),('1218490' , 'Farmgate, Dhaka (SB)'),('42238498' , 'FOREIGN EXCHANGE CORPORATE, DHAKA'),('42238501' , 'GANA BHABAN, DHAKA'),('42238505' , 'GORAN, DHAKA'),('42238507' , 'GREEN ROAD, DHAKA'),('42070627' , 'GULSHAN (SB)'),('1218491' , 'Gulshan New North,Dhaka (SB)'),('42238511' , 'HAZARIBAG, DHAKA'),('41293811' , 'HAZRAT SHAHJALAL INTL AIRPORT'),('42238512' , 'HOTEL SHERATAN, DHAKA'),('42238517' , 'IBRAHIMPUR, DHAKA'),('42238524' , 'ISHWARCHANDRA STREET, DHAKA'),('36250033' , 'JATIO SANGSAD BHABAN BR.'),('1218651' , 'Jatrabari, Dhaka (SB)'),('417' , 'Joypara (SB)'),('1218696' , 'Kakrail,Dhaka (SB)'),('42238528' , 'KALAKOPA, DHAKA'),('42238533' , 'KALAMPUR, DHAKA'),('42238536' , 'KALATIA, DHAKA'),('41839603' , 'KALYAN PUR (SB)'),('5602261' , 'Kamlapur Rly. St. ICD Br.'),('42238538' , 'KAWRAN BAZAR, DHAKA,SB'),('418' , 'Keraniganj (SB)'),('1218654' , 'Khilgaon, Dhaka (SB)'),('42143382' , 'KRISHI BAZAR MOHAMMADPUR'),('41751373' , 'KRISHI BHABAN (SB)'),('42238541' , 'KURMITOLA, DHAKA'),('1218723' , 'Lalbagh,Dhaka (SB)'),('1218698' , 'Lalmatia,Dhaka (SB)'),('1857477' , 'Laxmi Bazar, Dhaka (SB)'),('1217860' , 'Local Office,Dhaka'),('42238544' , 'MAKIM KATRA, DHAKA'),('1218656' , 'Malibagh,Dhaka (SB)'),('42241715' , 'MANIK MIAH AVENUE, DHAKA'),('1218700' , 'Md.Pur Bazar, Dhaka (SB)'),('42238546' , 'MIRPUR CANTT., DHAKA'),('1218711' , 'Mirpur I/A, Dhaka'),('2717246' , 'Mirpur Sec-1'),('1218699' , 'Mirpur Section-12, Dhaka'),('42238547' , 'MITFORD ROAD, DHAKA'),('1218493' , 'Mogh Bazar, Dhaka (SB)'),('1218494' , 'Mohakhali, Dhaka (SB)'),('1218498' , 'N.C.T.B,Dhaka (SB)'),('2549438' , 'Nagar Bhabon (SB)'),('42238548' , 'NAJIRABAZAR, DHAKA'),('41829146' , 'Naval H/Q (SB)'),('419' , 'Nawabganj (Dhaka)'),('1218724' , 'Nawabpur Road,Dhaka'),('42238563' , 'NAYABAZAR, DHAKA'),('42238570' , 'NAYARHAT, DHAKA'),('1218762' , 'Nazimuddin Road, Dhaka (SB)'),('1218665' , 'New Market, Dhaka'),('2452744' , 'North South Road Br. Dhaka (SB)'),('42238573' , 'P.A.T.C. (SAVAR), DHAKA'),('42238574' , 'PALAMGANJ, DHAKA'),('44332559' , 'PANGAON ICT BR.'),('1218725' , 'Postagola,Dhaka (SB)'),('41581585' , 'PRIME MINISTERS OFFICE (SB)'),('40338614' , 'Public Service Commission Branch (Dhaka Airport Branch)'),('42238578' , 'RAJUK BHABAN, DHAKA'),('4039439' , 'Ramna Corporate Branch (SB)'),('42238581' , 'RAMPURA, DHAKA'),('42238583' , 'RASULPUR BAZAR, DHAKA'),('42238588' , 'RUHITPUR, DHAKA'),('1218726' , 'Sadarghat Corp. Br,Dhaka (SB)'),('42238593' , 'SAIDABAD BUS TERMINAL, DHAKA'),('1218701' , 'Sat Masjid, Dhaka (SB)'),('325' , 'Savar (SB)'),('1218702' , 'Savar Cantt.,Dhaka (SB)'),('41423293' , 'SEGUN BAGICHA (SB)'),('41501647' , 'Shahjanpur (SB)'),('1218659' , 'Shilpa Bhaban,Dhaka (SB)'),('1218704' , 'Sonargaon Road,Dhaka (SB)'),('42139442' , 'Sonargoan Hotel (SB)'),('1218706' , 'Supreme Court,Dhaka (SB)'),('42238602' , 'TEJGAON INDUSTIAL AREA, DHAKA'),('42238606' , 'URDU ROAD, DHAKA'),('41583041' , 'UTTAR KHAN'),('41582663' , 'UTTARA MODEL TOWN (SB)'),('41426798' , 'VIQUARUN NESA NOON SCHOOL (SB)'),('41660316' , 'Wage Earners Corporate (SB)'),('2452798' , 'WAPDA Building Br.'),('1218750' , 'Wari, Dhaka (SB)'),('1218695' , 'Zigatola,Dhaka (SB)')
+    ])
+    
+    
+    
+    searchable_dates = []
+    
+    def daterange(date1, date2):
+        for n in range(int ((date2 - date1).days)+1):
+            yield date1 + timedelta(n)
+    
+    
+    for dt in daterange(dt_ranges[0], dt_ranges[1]):
+        searchable_dates.append(dt.strftime("%d-%m-%Y"))       
+        
+    def print_strings(elemnt):
+        for c in elemnt.children:
+            if isinstance(c, element.Tag):
+                return c.text
+            else:
+                return c.split(":")[-1].strip()
+        
+    #Collect data----------------------------------------------------------
+    request_count  = challan_collected = 0
+    for single_date in searchable_dates:
+        #pass the weekends
+        if parser.parse(single_date).weekday() in [4,5]:
+            continue
+        #print single_date
+        nonechk = []
+
+        if request_latch>50:
+            #time.sleep(random.choice([2,3,4,5,6,7]))
+            #print ('Waiting to bypass bot detection.')
+            #time.sleep(randint(1000,1200)/1000)
+            request_latch = 0
+            
+        for chln in range(1,9000000):
+            if len(nonechk)>maxCheckToPassSingleDate:
+                break
+            
+            single_form_data = {}
+            single_form_data.update([('bank_branch_id',xBranchCode),('chalan_date', single_date),
+                                     ('chalan_no',chln),('trans_type',transaction_type),('counter_no','0'),
+                                     ('bank_id','2'),('_','')])
+            #form_data.append(single_form_data)
+            # Handle Max retries exceeded with URL in requests
+            session = requests.Session()
+            retry = Retry(connect=3, backoff_factor=0.5)
+            adapter = HTTPAdapter(max_retries=retry)
+            session.mount('http://', adapter)
+            session.mount('https://', adapter)
+            success = False
+            while not success:
+                try:
+                    response = session.post(
+                        'http://103.48.16.132/echalan/VerifyChalan_new.php',
+                        #params={'q': 'requests+language:python'},
+                        headers={'Accept':'text/javascript, text/html, application/xml, text/xml, */*',
+                                 'Accept-Encoding':'gzip, deflate',
+                                 'Accept-Language':'en-US,en;q=0.9',
+                                 'Connection':'keep-alive',
+                                 #'Content-Length':'93',
+                                 'Content-type':'application/x-www-form-urlencoded; charset=UTF-8',
+                                 'Host':'103.48.16.132',
+                                 'Origin':'http://103.48.16.132',
+                                 'Referer':'http//103.48.16.132/echalan/echalan_iframe.php',
+                                 'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36',
+                                 'X-Prototype-Version':'1.6.1',
+                                 'X-Requested-With':'XMLHttpRequest'},
+                    
+                                  data=single_form_data)#,proxies = proxies)#,
+                                  #proxies = proxies)
+                                  #'User-Agent': random.choice(ua.data_browsers['chrome']
+                    
+                    success = True
+                except:
+                    #print(Back.RED + f"----Missed date {single_date} for challan no {chln} of branch code {xBranchCode} and challan type {transaction_type}.----")
+                    print(f"----Missed date {single_date} for challan no {chln} of branch code {xBranchCode} and challan type {transaction_type}.----")
+                    #print(Style.RESET_ALL)
+                    pass
+                #finally:
+
+            soup = BeautifulSoup(response.text.replace('<br>', ''), "lxml")
+            temp_data = {}
+            request_count+=1
+            temp_data.update([('challan no.',print_strings(soup.find_all('td')[2])),
+                           ('date',print_strings(soup.find_all('td')[3])),
+                            ('bank',print_strings(soup.find_all('td')[5])),
+                             ('branch',print_strings(soup.find_all('td')[6])),
+                              ('code no',print_strings(soup.find_all('td')[7]).split(':')[-1].strip()),
+                               ('name',print_strings(soup.find_all('td')[17])),
+                                ('amount',print_strings(soup.find_all('td')[19]))])   
+    
+            if sum(len(x.strip()) == 0 for x in temp_data.values())>2:
+                nonechk.append(1)
+            else:
+                temp_data.update([('branch_name',bank_brnch[xBranchCode]),\
+                                  ('branch_code',xBranchCode),('challan_type',xTransactionType)])
+                master_data.append(temp_data)
+                challan_collected+=1
+                #reset nonechk to further check
+                nonechk = []
+            request_latch+=1
+            
+        print ('Completed Date '+single_date+' '+bank_brnch[xBranchCode]+ f" of range---- {searchable_dates[0]} to {searchable_dates[-1]}"+'.')
+        #print ('Total Request Made: ' + str(request_count))
+        #print ('Chalan Collected: ' + str(challan_collected))
+    return master_data
+
+
+
+#---------------------------MULTI-PROCESSING--------------------------
+
+
+#------------PAREMETER-----------------
+
+postQueryType = 'L'
+branchCode = '91'
+upzilaName = 'Comilla'
+dtS_ = '2013-07-01' #(Y-M-D) start date
+dtE_ = '2021-01-26' #end date
+dateChunkSixe = 30
+maxCheckToPassSingleDate = 100
+
+#------------PAREMETER-----------------
+
+
+
+
+
+
+if postQueryType == 'C':
+    saveType =  'Cash'
+elif postQueryType == 'L':
+    saveType = 'Check'
+else:
+    saveType = 'Unknown'
+    
+header_write_flag = True
+master_data_ = []
+
+# Make a list of arguments
+
+
+DATE_FORMAT = '%Y-%m-%d'
+DATE_STEP = timedelta(days=1)
+
+
+def _strptime(string):
+    return datetime.strptime(string, DATE_FORMAT)
+
+
+def _strftime(date):
+    return date.strftime(DATE_FORMAT)
+
+
+def _date_range_parameters(start, end, span_days):
+    start = _strptime(start)
+    end   = _strptime(end)
+    span  = timedelta(days=span_days)
+    return start, end, span
+
+
+def forward_date_range(start, end, span_days):
+    """
+    Generate tuples with intervals from given range of dates (forward).
+
+    forward_date_range('2012-01-01', '2012-01-5', 2)
+
+    1st yield = ('2012-01-01', '2012-01-03')
+    2nd yield = ('2012-01-04', '2012-01-05')
+    """
+    start, end, span = _date_range_parameters(start, end, span_days)
+    stop = end - span
+
+    while start < stop:
+        current = start + span
+        yield _strftime(start), _strftime(current)
+        start = current + DATE_STEP
+
+    yield _strftime(start), _strftime(end)
+
+argmnts = list(forward_date_range(dtS_, dtE_, dateChunkSixe))
+doneList = []
+
+try:
+    with open(f'Branch code {branchCode} {saveType} collected_date_range_tuples.pkl', 'rb') as f:
+        while True:
+            try:
+                doneList.append(pickle.load(f))
+            except EORError:
+                break
+except:
+    pass
+
+if len(doneList)>0:
+    argmnts = [notDone for notDone in argmnts if notDone not in doneList]
+    
+#File and folder name sanitizer
+def sanitize_file_folder_name(ffname):
+    reserved_chars = [':','>','<','"','/','\\','*','?','|']
+    for rc in reserved_chars:
+        ffname = ffname.replace(rc,'_').strip()
+    return ffname
+
+def my_data_writer(master_data_to_write,folder_name,date_of_write,trans_type,csv_write_mode):
+    #Write a date chunk data extracted  
+    if csv_write_mode is None:
+        csv_write_mode = 'a'
+    if len(master_data_to_write)>0:
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+        file_pathe_name  = sanitize_file_folder_name(folder_name)+'\\List_'+sanitize_file_folder_name(folder_name+'_From_'+\
+            str(datetime.strptime(date_of_write, "%Y-%m-%d").strftime("%Y-%m-%d"))\
+            +'_'+trans_type)+'.csv'#+'_'+str(datetime.datetime.now())
+
+        #file_pathe_name = sanitize_file_folder_name(file_pathe_name)
+        keys = master_data_to_write[0].keys()
+        print (file_pathe_name)
+        output_file =  open(file_pathe_name, csv_write_mode,encoding='utf-8',newline='')
+        dict_writer = csv.DictWriter(output_file, keys)
+        global header_write_flag
+        if header_write_flag:
+            dict_writer.writeheader()
+        header_write_flag = False
+        dict_writer.writerows(master_data_to_write)
+        #fromdateTemp = str(datetime.datetime.strptime(single_date, "%d-%m-%Y").strftime("%Y-%m-%d"))
+        #master_data_to_write = []
+        output_file.close()
+
+
+completed_futures = collections.deque()
+
+def callback(future, completed=completed_futures):
+    completed.append(future)
+
+if __name__ == '__main__':
+    # We can use a with statement to ensure threads are cleaned up promptly
+    with concurrent.futures.ThreadPoolExecutor(max_workers=40) as executor:
+        # Start the load operations and mark each future with its URL
+        csv_data = {executor.submit(challan_scrapper, branchCode, postQueryType, ar[0],ar[1]): ar for ar in argmnts[:]}
+        for future in concurrent.futures.as_completed(csv_data):
+            batch = csv_data[future]
+            try:
+                data = future.result()
+            except Exception as exc:
+                print('%r generated an exception: %s' % (batch,exc))
+            else:
+                print('%r collected %d challans' % (batch,len(data)))
+                future.add_done_callback(callback)
+                master_data_ = master_data_ + data
+                while completed_futures:                     
+                    #input('Going to save into csv.')            
+                    #my_data_writer(data, upzilaName, batch[0]+"_"+batch[1]+"_"+datetime.today().strftime('%Y-%m-%d'), saveType,'a')
+                    my_data_writer(completed_futures.pop().result(), upzilaName,datetime.today().strftime('%Y-%m-%d'), saveType+"_"+batch[0]+"_to_"+batch[1]+"_",'w')
+                    print (f"Completed date range for {batch[0]} to {batch[1]}.")
+                    with open(f'Branch code {branchCode} {saveType} collected_date_range_tuples.pkl', 'ab') as f:
+                        pickle.dump(batch, f)
+                    
+my_data_writer(master_data_, upzilaName,datetime.today().strftime('%Y-%m-%d'), saveType,'a')
